@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>DouNara</title>
+<script src="/socket.io/socket.io.js"></script>
+<style>
+body {
+  background: #0b0014;
+  color: violet;
+  font-family: Arial;
+  text-align: center;
+}
+#chat { display:none; }
+input, button {
+  padding:10px;
+  margin:5px;
+  border:none;
+  border-radius:5px;
+}
+button { background: violet; color:black; }
+#messages {
+  border:1px solid violet;
+  height:300px;
+  overflow:auto;
+  margin:10px;
+}
+</style>
+</head>
+
+<body>
+<h1>💜 DouNara 💜</h1>
+
+<div id="login">
+  <input id="name" placeholder="Ton nom">
+  <button onclick="join()">Se connecter</button>
+</div>
+
+<div id="chat">
+  <div id="messages"></div>
+  <input id="msg" placeholder="Message">
+  <button onclick="send()">Envoyer</button>
+</div>
+
+<script>
+const socket = io();
+
+function join(){
+  let name = document.getElementById("name").value;
+  socket.emit("join", name);
+}
+
+socket.on("joined", ()=>{
+  document.getElementById("login").style.display="none";
+  document.getElementById("chat").style.display="block";
+});
+
+socket.on("full", ()=>{
+  alert("Seulement 2 personnes autorisées");
+});
+
+function send(){
+  let msg = document.getElementById("msg").value;
+  socket.emit("message", msg);
+  add("Moi: "+msg);
+  document.getElementById("msg").value="";
+}
+
+socket.on("message", (msg)=>{
+  add("Lui: "+msg);
+});
+
+function add(text){
+  let div = document.createElement("div");
+  div.textContent = text;
+  document.getElementById("messages").appendChild(div);
+}
+</script>
+
+</body>
+</html>
