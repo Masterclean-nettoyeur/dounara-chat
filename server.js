@@ -2,36 +2,35 @@ const express = require("express");
 const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
+const mongoose = require("mongoose");
 
 app.use(express.static("public"));
 
-let users = [];
-let images = []; // stocke les images pour l'album
+// 🔗 Connexion MongoDB
+mongoose.connect("mongodb+srv://doukingmbaye232_db_user:<6dixSWuceAQ6BnAC>@cluster0.zqcaytj.mongodb.net/?appName=Cluster0", {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+});
 
-io.on("connection", (socket) => {
-  socket.on("join", (name) => {
-    if (users.length < 2) {
-      users.push({ id: socket.id, name });
-      socket.emit("joined", name);
-      socket.emit("album", images); // envoyer l'album existant
-    } else {
-      socket.emit("full");
-    }
+// 📦 Schéma Message
+const Message = mongoose.model("Message", {
+  user: String,
+  text: String,
+  date: { type: Date, default: Date.now }
+});
+
+io.on("connection", async (socket) => {
+
+  // envoyer anciens messages
+  const messages = await Message.find().sort({ date: 1 });
+  socket.emit("history", messages);
+
+  socket.on("message", async (data) => {
+    const msg = new Message(data);
+    await msg.save(); // sauvegarde en base
+    socket.broadcast.emit("message", data);
   });
 
-  socket.on("message", (msg) => {
-    socket.broadcast.emit("message", msg);
-  });
-
-  socket.on("image", (imgData) => {
-    images.push(imgData); // sauvegarde dans l'album
-    socket.broadcast.emit("image", imgData);
-    io.emit("album", images); // mise à jour album pour tous
-  });
-
-  socket.on("disconnect", () => {
-    users = users.filter(u => u.id !== socket.id);
-  });
 });
 
 const PORT = process.env.PORT || 3000;
