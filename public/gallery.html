@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Album DouNara</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{
+  background:#0b0014;
+  color:violet;
+  font-family:Arial;
+}
+h1{text-align:center;}
+.gallery{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
+  gap:10px;
+  padding:10px;
+}
+.gallery img{
+  width:100%;
+  border-radius:10px;
+}
+button{
+  background:violet;
+  border:none;
+  padding:10px;
+  border-radius:10px;
+  margin:10px;
+}
+</style>
+</head>
+
+<body>
+<h1>📸 Album Souvenirs</h1>
+<button onclick="back()">⬅ Retour</button>
+<div class="gallery" id="gallery"></div>
+
+<script>
+const album = JSON.parse(localStorage.getItem("album") || "[]");
+const gallery = document.getElementById("gallery");
+
+album.forEach(img=>{
+  let image=document.createElement("img");
+  image.src=img;
+  gallery.appendChild(image);
+});
+
+function back(){
+  window.location.href="index.html";
+}
+</script>
+</body>
+</html>
