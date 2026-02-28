@@ -107,65 +107,39 @@ button {
 
 <script>
 const socket = io();
-let album = [];
 
 function join(){
   socket.emit("join", name.value);
 }
 
-socket.on("joined", ()=>{
-  login.style.display="none";
-  chat.style.display="flex";
-});
-
-socket.on("album", (imgs)=>{
-  album = imgs;
-  localStorage.setItem("album", JSON.stringify(album));
+socket.on("history", (messages)=>{
+  messages.forEach(m=>{
+    addText(m.user + " : " + m.text);
+  });
 });
 
 function send(){
-  socket.emit("message", msg.value);
-  addText("Moi: "+msg.value);
+  const data = {
+    user: "Moi",
+    text: msg.value
+  };
+  socket.emit("message", data);
+  addText("Moi : " + msg.value);
   msg.value="";
 }
 
-socket.on("message", (msg)=>{
-  addText("Lui: "+msg);
-});
-
-function sendImage(){
-  const file = imageInput.files[0];
-  const reader = new FileReader();
-  reader.onload = function(){
-    socket.emit("image", reader.result);
-    addImage(reader.result);
-  };
-  reader.readAsDataURL(file);
-}
-
-socket.on("image", (imgData)=>{
-  addImage(imgData);
+socket.on("message", (data)=>{
+  addText("Lui : " + data.text);
 });
 
 function addText(text){
-  let d=document.createElement("div");
-  d.textContent=text;
+  let d = document.createElement("div");
+  d.textContent = text;
   messages.appendChild(d);
-}
-
-function addImage(data){
-  let d=document.createElement("div");
-  let img=document.createElement("img");
-  img.src=data;
-  d.appendChild(img);
-  messages.appendChild(d);
-}
-
-function goAlbum(){
-  window.location.href="gallery.html";
 }
 </script>
 </body>
 
 </html>
+
 
