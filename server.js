@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 app.use(express.static("public"));
 
 // 🔗 Connexion MongoDB
-mongoose.connect("mongodb+srv://doukingmbaye232_db_user:<6dixSWuceAQ6BnAC>@cluster0.zqcaytj.mongodb.net/?appName=Cluster0", {
+mongoose.connect("mongodb+srv://doukingmbaye232_db_user:6dixSWuceAQ6BnAC@cluster0.zqcaytj.mongodb.net/?appName=Cluster0", {
   useNewUrlParser: true,
   useUnifiedTopology: true
 });
@@ -37,3 +37,4 @@ const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
   console.log("DouNara lancé sur le port " + PORT);
 });
+
