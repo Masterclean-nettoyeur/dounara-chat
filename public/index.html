@@ -68,6 +68,17 @@ button {
   border-radius:10px;
   padding:8px;
 }
+  .icon-btn {
+  font-size: 22px;
+  background: #7b2cff;
+  color: white;
+  padding: 10px 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>
 </head>
 
@@ -86,7 +97,8 @@ button {
 <div id="chat">
   <div id="messages"></div>
   <div class="footer">
-    <input type="file" id="imageInput" accept="image/*" onchange="sendImage()">
+   <label for="imageInput" class="icon-btn">📷</label>
+    <input type="file" id="imageInput" accept="image/*" onchange="sendImage()" hidden>
     <input id="msg" placeholder="Message...">
     <button onclick="send()">➤</button>
   </div>
@@ -156,3 +168,4 @@ function goAlbum(){
 </body>
 
 </html>
+
