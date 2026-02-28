@@ -7,173 +7,147 @@
 <script src="/socket.io/socket.io.js"></script>
 
 <style>
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: "Segoe UI", Arial, sans-serif;
-}
-
 body {
-  background: linear-gradient(135deg, #0b0014, #1a0033);
-  color: #e0b3ff;
-  min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  background:#0b0014;
+  color:#e0b3ff;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100dvh;
+  font-family:Arial;
 }
 
 .app {
-  background: #12001f;
-  width: 100%;
-  max-width: 400px;
-  height: 90vh;
-  border-radius: 20px;
-  box-shadow: 0 0 20px rgba(180, 0, 255, 0.4);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  background:#12001f;
+  width:100%;
+  max-width:400px;
+  height:100dvh;
+  display:flex;
+  flex-direction:column;
 }
 
 header {
-  background: #24003d;
-  padding: 15px;
-  text-align: center;
-  font-size: 22px;
-  font-weight: bold;
-  color: #c77dff;
+  background:#24003d;
+  padding:15px;
+  text-align:center;
+  font-size:22px;
 }
 
 #login, #chat {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 20px;
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding:10px;
 }
 
-input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  margin-bottom: 15px;
-  font-size: 16px;
-}
-
-button {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  background: linear-gradient(135deg, #7b2cff, #c77dff);
-  color: black;
-  font-size: 16px;
-  font-weight: bold;
-}
-
-#chat {
-  display: none;
-}
+#chat { display:none; }
 
 #messages {
-  flex: 1;
-  width: 100%;
-  background: #0b0014;
-  border-radius: 10px;
-  padding: 10px;
-  overflow-y: auto;
-  margin-bottom: 10px;
+  flex:1;
+  overflow-y:auto;
 }
 
-.message.me {
-  text-align: right;
-  margin: 5px 0;
-  color: #d38cff;
-}
-
-.message.other {
-  text-align: left;
-  margin: 5px 0;
-  color: #ffffff;
+.message img {
+  max-width:70%;
+  border-radius:10px;
+  margin-top:5px;
 }
 
 .footer {
-  display: flex;
-  gap: 5px;
+  display:flex;
+  gap:5px;
 }
 
-.footer input {
-  flex: 1;
-}
-
-@media (max-width: 480px) {
-  .app {
-    height: 100vh;
-    border-radius: 0;
-  }
+button {
+  background:violet;
+  border:none;
+  border-radius:10px;
+  padding:8px;
 }
 </style>
 </head>
 
 <body>
-
 <div class="app">
-  <header>💜 DouNara 💜</header>
+<header>
+  💜 DouNara 💜  
+  <button onclick="goAlbum()">📸 Album</button>
+</header>
 
-  <div id="login">
-    <input id="name" placeholder="Ton nom">
-    <button onclick="join()">Se connecter</button>
-  </div>
+<div id="login">
+  <input id="name" placeholder="Ton nom">
+  <button onclick="join()">Se connecter</button>
+</div>
 
-  <div id="chat">
-    <div id="messages"></div>
-    <div class="footer">
-      <input id="msg" placeholder="Ton message...">
-      <button onclick="send()">➤</button>
-    </div>
+<div id="chat">
+  <div id="messages"></div>
+  <div class="footer">
+    <input type="file" id="imageInput" accept="image/*" onchange="sendImage()">
+    <input id="msg" placeholder="Message...">
+    <button onclick="send()">➤</button>
   </div>
+</div>
 </div>
 
 <script>
 const socket = io();
+let album = [];
 
 function join(){
-  let name = document.getElementById("name").value;
-  if(name.trim() === "") return alert("Entre ton nom");
-  socket.emit("join", name);
+  socket.emit("join", name.value);
 }
 
 socket.on("joined", ()=>{
-  document.getElementById("login").style.display="none";
-  document.getElementById("chat").style.display="flex";
+  login.style.display="none";
+  chat.style.display="flex";
 });
 
-socket.on("full", ()=>{
-  alert("Seulement 2 personnes autorisées");
+socket.on("album", (imgs)=>{
+  album = imgs;
+  localStorage.setItem("album", JSON.stringify(album));
 });
 
 function send(){
-  let msg = document.getElementById("msg").value;
-  if(msg.trim() === "") return;
-  socket.emit("message", msg);
-  addMessage(msg, "me");
-  document.getElementById("msg").value="";
+  socket.emit("message", msg.value);
+  addText("Moi: "+msg.value);
+  msg.value="";
 }
 
 socket.on("message", (msg)=>{
-  addMessage(msg, "other");
+  addText("Lui: "+msg);
 });
 
-function addMessage(text, type){
-  let div = document.createElement("div");
-  div.className = "message " + type;
-  div.textContent = text;
-  document.getElementById("messages").appendChild(div);
-  document.getElementById("messages").scrollTop = messages.scrollHeight;
+function sendImage(){
+  const file = imageInput.files[0];
+  const reader = new FileReader();
+  reader.onload = function(){
+    socket.emit("image", reader.result);
+    addImage(reader.result);
+  };
+  reader.readAsDataURL(file);
+}
+
+socket.on("image", (imgData)=>{
+  addImage(imgData);
+});
+
+function addText(text){
+  let d=document.createElement("div");
+  d.textContent=text;
+  messages.appendChild(d);
+}
+
+function addImage(data){
+  let d=document.createElement("div");
+  let img=document.createElement("img");
+  img.src=data;
+  d.appendChild(img);
+  messages.appendChild(d);
+}
+
+function goAlbum(){
+  window.location.href="gallery.html";
 }
 </script>
-
 </body>
 </html>
