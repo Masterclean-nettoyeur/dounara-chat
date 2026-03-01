@@ -7,139 +7,128 @@
 <script src="/socket.io/socket.io.js"></script>
 
 <style>
-body {
-  background:#0b0014;
-  color:#e0b3ff;
+body{
+  background:white;
+  color:#58071a;
+  font-family:Arial;
   display:flex;
   justify-content:center;
-  align-items:center;
-  height:100dvh;
-  font-family:Arial;
 }
-
-.app {
-  background:#12001f;
+.app{
   width:100%;
-  max-width:400px;
-  height:100dvh;
+  max-width:420px;
+  height:100vh;
   display:flex;
   flex-direction:column;
 }
-
-header {
-  background:#24003d;
-  padding:15px;
-  text-align:center;
-  font-size:22px;
-}
-
-#login, #chat {
-  flex:1;
-  display:flex;
-  flex-direction:column;
+header{
+  background:#58071a;
+  color:white;
   padding:10px;
+  text-align:center;
 }
-
-#chat { display:none; }
-
-#messages {
-  flex:1;
-  overflow-y:auto;
-}
-
-.message img {
-  max-width:85%;
-  max-height:250px;
-  object-fit:cover;
-  border-radius:12px;
-  margin-top:5px;
-  box-shadow:0 0 5px 
-  rgba(180,0,255,0.4);
-}
-
-.footer {
-  display:flex;
-  gap:5px;
-}
-
-button {
-  background:violet;
-  border:none;
-  border-radius:10px;
-  padding:8px;
-}
-  .icon-btn {
-  font-size: 22px;
-  background: #7b2cff;
-  color: white;
-  padding: 10px 12px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
+#messages{flex:1;overflow:auto;padding:10px;}
+input,button{padding:10px;margin:5px;}
+video{width:100%;border-radius:10px;}
+.call-btn{background:#58071a;color:white;}
 </style>
 </head>
 
 <body>
 <div class="app">
-<header>
-  💜 DouNara 💜  
-  <button onclick="goAlbum()">📸 Album</button>
-</header>
+<header>DouNara 💚</header>
 
-<div id="login">
-  <input id="name" placeholder="Ton nom">
-  <button onclick="join()">Se connecter</button>
-</div>
+<div id="messages"></div>
 
-<div id="chat">
-  <div id="messages"></div>
-  <div class="footer">
-   <label for="imageInput" class="icon-btn">📷</label>
-    <input type="file" id="imageInput" accept="image/*" onchange="sendImage()" hidden>
-    <input id="msg" placeholder="Message...">
-    <button onclick="send()">➤</button>
-  </div>
-</div>
+<input id="msg" placeholder="Message...">
+<button onclick="send()">Envoyer</button>
+
+<button class="call-btn" onclick="startCall()">📹 Appeler</button>
+
+<video id="localVideo" autoplay muted></video>
+<video id="remoteVideo" autoplay></video>
 </div>
 
 <script>
 const socket = io();
+let localStream;
+let peer;
 
-function join(){
-  socket.emit("join", name.value);
-}
+const config = {
+  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+};
 
-socket.on("history", (messages)=>{
-  messages.forEach(m=>{
-    addText(m.user + " : " + m.text);
-  });
+socket.on("history", msgs=>{
+  msgs.forEach(m=>add(m.user+" : "+m.text));
 });
 
 function send(){
-  const data = {
-    user: "Moi",
-    text: msg.value
-  };
-  socket.emit("message", data);
-  addText("Moi : " + msg.value);
+  const data={user:"Moi",text:msg.value};
+  socket.emit("message",data);
+  add("Moi : "+msg.value);
   msg.value="";
 }
 
-socket.on("message", (data)=>{
-  addText("Lui : " + data.text);
+socket.on("message", data=>{
+  add("Lui : "+data.text);
 });
 
-function addText(text){
-  let d = document.createElement("div");
-  d.textContent = text;
+function add(t){
+  let d=document.createElement("div");
+  d.textContent=t;
   messages.appendChild(d);
 }
+
+// 🎥 démarrer appel
+async function startCall(){
+  localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  localVideo.srcObject=localStream;
+
+  peer = new RTCPeerConnection(config);
+  localStream.getTracks().forEach(track=>peer.addTrack(track,localStream));
+
+  peer.onicecandidate = e=>{
+    if(e.candidate) socket.emit("ice-candidate", e.candidate);
+  };
+
+  peer.ontrack = e=>{
+    remoteVideo.srcObject = e.streams[0];
+  };
+
+  const offer = await peer.createOffer();
+  await peer.setLocalDescription(offer);
+  socket.emit("call-user", offer);
+}
+
+// 📞 appel entrant (aperçu AVANT décrocher)
+socket.on("incoming-call", async (offer)=>{
+  localStream = await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+  localVideo.srcObject=localStream;
+
+  peer = new RTCPeerConnection(config);
+  localStream.getTracks().forEach(track=>peer.addTrack(track,localStream));
+
+  peer.ontrack = e=>{
+    remoteVideo.srcObject = e.streams[0];
+  };
+
+  peer.onicecandidate = e=>{
+    if(e.candidate) socket.emit("ice-candidate", e.candidate);
+  };
+
+  await peer.setRemoteDescription(offer);
+  const answer = await peer.createAnswer();
+  await peer.setLocalDescription(answer);
+  socket.emit("answer-call", answer);
+});
+
+socket.on("call-answered", async (answer)=>{
+  await peer.setRemoteDescription(answer);
+});
+
+socket.on("ice-candidate", async (candidate)=>{
+  await peer.addIceCandidate(candidate);
+});
 </script>
 </body>
-
 </html>
-
-
