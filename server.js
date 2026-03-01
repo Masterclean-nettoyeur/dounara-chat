@@ -6,13 +6,10 @@ const mongoose = require("mongoose");
 
 app.use(express.static("public"));
 
-// 🔗 Connexion MongoDB
-mongoose.connect("mongodb+srv://doukingmbaye232_db_user:6dixSWuceAQ6BnAC@cluster0.zqcaytj.mongodb.net/?appName=Cluster0", {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-});
+// 🔗 MongoDB
+mongoose.connect("TON_LIEN_MONGODB_ICI");
 
-// 📦 Schéma Message
+// Message schema
 const Message = mongoose.model("Message", {
   user: String,
   text: String,
@@ -21,20 +18,33 @@ const Message = mongoose.model("Message", {
 
 io.on("connection", async (socket) => {
 
-  // envoyer anciens messages
+  // envoyer historique
   const messages = await Message.find().sort({ date: 1 });
   socket.emit("history", messages);
 
+  // chat
   socket.on("message", async (data) => {
     const msg = new Message(data);
-    await msg.save(); // sauvegarde en base
+    await msg.save();
     socket.broadcast.emit("message", data);
+  });
+
+  // 📹 WebRTC signalling
+  socket.on("call-user", (signal) => {
+    socket.broadcast.emit("incoming-call", signal);
+  });
+
+  socket.on("answer-call", (signal) => {
+    socket.broadcast.emit("call-answered", signal);
+  });
+
+  socket.on("ice-candidate", (candidate) => {
+    socket.broadcast.emit("ice-candidate", candidate);
   });
 
 });
 
 const PORT = process.env.PORT || 3000;
 http.listen(PORT, () => {
-  console.log("DouNara lancé sur le port " + PORT);
+  console.log("DouNara v2 lancé sur " + PORT);
 });
-
